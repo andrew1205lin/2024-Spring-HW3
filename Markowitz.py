@@ -66,7 +66,12 @@ class EqualWeightPortfolio:
         """
         TODO: Complete Task 1 Below
         """
-
+        num_assets = len(assets)
+        equal_weight = 1.0 / num_assets
+        for asset in assets:
+            self.portfolio_weights[asset] = equal_weight
+        
+        self.portfolio_weights[self.exclude] = 0
         """
         TODO: Complete Task 1 Above
         """
@@ -117,7 +122,13 @@ class RiskParityPortfolio:
         """
         TODO: Complete Task 2 Below
         """
+        for i in range(self.lookback + 1, len(df)):
+            rolling_vol = df_returns[assets].iloc[i - self.lookback:i].std()
+            inv_vol_weights = 1 / rolling_vol
+            inv_vol_weights /= inv_vol_weights.sum()
+            self.portfolio_weights.loc[df.index[i], assets] = inv_vol_weights
 
+        self.portfolio_weights[self.exclude] = 0
         """
         TODO: Complete Task 2 Above
         """
@@ -192,9 +203,16 @@ class MeanVariancePortfolio:
 
                 # Sample Code: Initialize Decision w and the Objective
                 # NOTE: You can modify the following code
-                w = model.addMVar(n, name="w", ub=1)
-                model.setObjective(w.sum(), gp.GRB.MAXIMIZE)
+                # w = model.addMVar(n, name="w", ub=1)
+                # model.setObjective(w.sum(), gp.GRB.MAXIMIZE)
 
+                # Initialize Decision w and the Objective
+                w = model.addMVar(n, name="w", lb=0)  # long-only constraint
+                obj = mu @ w - gamma / 2 * w @ Sigma @ w
+                model.setObjective(obj, gp.GRB.MAXIMIZE)
+
+                # Add constraint that weights sum to 1
+                model.addConstr(w.sum() == 1, "budget")  # no leverage constraint
                 """
                 TODO: Complete Task 3 Below
                 """
