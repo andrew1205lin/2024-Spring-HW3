@@ -74,7 +74,28 @@ class MyPortfolio:
         """
         TODO: Complete Task 4 Below
         """
+        model = gp.Model("portfolio_optimization")
+        
+        weight_vars = model.addVars(assets, lb=0, ub=1, name="weights")
+        
+        mean_returns = np.array([self.returns[asset].mean() for asset in assets])
+        risk_std = np.array([self.returns[asset].std() for asset in assets])
 
+        model.setObjective(
+            gp.quicksum(weight_vars[asset] * mean_returns[j] for j, asset in enumerate(assets)) / risk_std.mean(),
+            sense=gp.GRB.MAXIMIZE
+        )
+        
+        model.addConstr(gp.quicksum(weight_vars[asset] for asset in assets) == 1, "budget")
+
+        model.optimize()
+
+        if model.status == gp.GRB.OPTIMAL:
+            for asset in assets:
+                self.portfolio_weights[asset] = weight_vars[asset].X
+        else:
+            for asset in assets:
+                self.portfolio_weights[asset] = 0
         """
         TODO: Complete Task 4 Above
         """
